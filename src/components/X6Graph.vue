@@ -590,7 +590,7 @@ export default {
     },
 
     getGraphConfig() {
-      return Object.assign({
+      const defaultConfig = {
         background: {color: '#F2F7FA'},
         autoResize: true,
         width: 800,
@@ -617,10 +617,12 @@ export default {
         translating: { // 限制节点移动范围
           restrict: true,
         },
-      }, this.config)
+      }
+      return merge(defaultConfig, this.config)
     },
 
     makeGraphInstance() {
+      console.log(this.getGraphConfig())
       this.graph = new Graph({
         container: this.$refs.graph,
         ...this.getGraphConfig(),

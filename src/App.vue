@@ -59,6 +59,8 @@
 /* eslint-disable */
 import X6Graph from '@/components/X6Graph.vue'
 
+import bg from '@/assets/bg.jpg'
+
 export default {
   name: 'App',
   components: {
@@ -72,7 +74,7 @@ export default {
         rows: this.layout.rows,
         cols: this.layout.cols,
         items: this.layout.items,
-        config: {type: Object, default: () => ({})},
+        config: this.config,
         tags: [
           {id: 1, title: '安静', color: '#37A0FB'},
           {id: 2, title: '阳光', color: '#F6B25F'},
@@ -89,6 +91,8 @@ export default {
       },
       config: {
         /* x6 config */
+        // @see https://x6.antv.antgroup.com/api/graph/background
+        background: {color: '#F2F7FA', image: bg},
       },
     }
   },
