@@ -4,6 +4,12 @@
       <el-col :span="18">
         <el-card header="座位图">
           <el-alert :closable="false">
+            <p>保存后不可修改位置, 仅可修改属性</p>
+            <p>切换类型会清空已有数据</p>
+            <p>异形仅方形可设置为座位, 其他均为桌位</p>
+          </el-alert>
+
+          <el-alert :closable="false">
             <p>space＋鼠标左键＝拖动</p>
             <p>alt＋鼠标左键＝缩放</p>
             <p>shift＋鼠标左键＝框选</p>
@@ -12,7 +18,6 @@
             <X6Graph
                 ref="x6"
                 v-bind="graph"
-                @command="handleCommand"
             />
           </div>
         </el-card>
@@ -28,16 +33,19 @@
               </el-radio-group>
             </el-form-item>
 
-            <el-form-item label="横排数量">
-              <el-input-number v-model="layout.rows" :min="1"/>
-            </el-form-item>
+            <template v-if="layout.type === 'normal'">
+              <el-form-item label="横排数量">
+                <el-input-number v-model="layout.rows" :min="1"/>
+              </el-form-item>
 
-            <el-form-item label="竖排数量">
-              <el-input-number v-model="layout.cols" :min="1"/>
-            </el-form-item>
+              <el-form-item label="竖排数量">
+                <el-input-number v-model="layout.cols" :min="1"/>
+              </el-form-item>
+            </template>
 
             <el-form-item label="">
               <el-button @click="handleCalculateLayout">确定</el-button>
+              <el-button @click="handleSave">保存</el-button>
             </el-form-item>
 
           </el-form>
@@ -50,8 +58,6 @@
 <script>
 /* eslint-disable */
 import X6Graph from '@/components/X6Graph.vue'
-import Seat from '@/composables/seat'
-import {tags} from '@/composables/seat/config'
 
 export default {
   name: 'App',
@@ -62,18 +68,28 @@ export default {
   computed: {
     graph() {
       return {
-        // @see https://x6.antv.antgroup.com/api/graph/graph
-        config: {},
-        ...this.layout,
-        tags,
+        type: this.layout.type,
+        rows: this.layout.rows,
+        cols: this.layout.cols,
+        items: this.layout.items,
+        config: {type: Object, default: () => ({})},
+        tags: [
+          {id: 1, title: '安静', color: '#37A0FB'},
+          {id: 2, title: '阳光', color: '#F6B25F'},
+          {id: 3, title: '舒适', color: '#43BC69'},
+        ],
       }
     },
   },
 
   data() {
     return {
-      layout: Seat.makeLayout(),
-      config: {},
+      layout: {
+        type: 'shape', rows: 4, cols: 6, items: [],
+      },
+      config: {
+        /* x6 config */
+      },
     }
   },
 
@@ -81,49 +97,15 @@ export default {
   },
 
   methods: {
-    handleCommand(command) {
-      command.cells.forEach(cell => {
-        const {row, column} = cell
-        const [action, value, tag = null] = command.action
+    handleSave() {
+      console.log(this.$refs.x6.handleExport())
 
-        // 修改类型
-        if (action === 'type') {
-          this.layout.items[row][column].type = value
-        }
-
-        // 修改状态
-        if (action === 'state') {
-          this.layout.items[row][column].state = value
-        }
-
-        // 添加标签
-        if (action === 'tags' && value === 'add') {
-          const item = this.layout.items[row][column]
-          const index = this.layout.items[row][column].tags.findIndex(t => t === tag)
-
-          if (index === -1) {
-            item.tags.push(tag)
-            item.tags.sort()
-          }
-        }
-
-        // 清空标签
-        if (action === 'tags' && value === 'clean') {
-          this.layout.items[row][column].tags = []
-        }
-      })
-
-      this.$nextTick(_ => this.$refs.x6.draw())
+      console.log(JSON.stringify(this.$refs.x6.handleExport()))
     },
 
     handleCalculateLayout() {
-      this.layout.items = Seat.calcItems(this.layout)
-
-      // 手动画, 防止效率问题
-      this.$nextTick(_ => {
-        this.$refs.x6.draw()
-        this.$refs.x6.resetZoom()
-      })
+      // 确认数量后, 手动画
+      this.$refs.x6.draw()
     },
   },
 }

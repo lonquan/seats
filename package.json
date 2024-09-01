@@ -9,8 +9,11 @@
   },
   "dependencies": {
     "@antv/x6": "^2.18.1",
+    "@antv/x6-plugin-dnd": "^2.1.1",
     "@antv/x6-plugin-export": "^2.1.6",
     "@antv/x6-plugin-selection": "^2.2.2",
+    "@antv/x6-plugin-snapline": "^2.1.7",
+    "@antv/x6-plugin-transform": "^2.1.8",
     "@antv/x6-vue-shape": "^2.1.2",
     "core-js": "^3.8.3",
     "element-ui": "^2.15.14",
