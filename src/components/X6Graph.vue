@@ -2,11 +2,11 @@
   <div class="x-container">
     <div class="x-dnd-wrap" ref="dndContainer" v-show="type === 'shape'">
       <div
-          v-for="i in dndNodes"
+          v-for="(i) in dndNodes"
           class="dnd-item"
-          :class="`dnd-${i.key}`"
-          :key="i.key"
-          @mousedown="evt => handleStartDragItem(i.key, evt)"
+          :class="`dnd-${i.type}`"
+          :key="i.type"
+          @mousedown="evt => handleStartDragItem(i, evt)"
       >{{ i.label }}
       </div>
     </div>
@@ -67,15 +67,18 @@ const createStatus = {
  * @type {{seat: string, passage: string, table: string}}
  */
 const types = {
-  seat: '座位', passage: '通道', table: '桌子',
+  seat: '座位', passage: '通道',
+  square_table: '正方桌', circle_table: '圆形桌',
+  rectangle_table: '长方桌', hexagon_table: '六边桌',
+  octagon_table: '八边桌',
 }
 
 /**
  * 节点默认数据
- * @type {{index: null, id: null, state: string, type: string, tags: *[]}}
+ * @type {{id: null, state: string, type: string, tags: number[]}}
  */
-const nodeData = {
-  id: null, state: 'available', type: 'seat', tags: [], index: null, shape_type: 'normal',
+const nodeItem = {
+  id: null, state: 'available', type: 'seat', tags: [], graph: null,
 }
 
 /**
@@ -83,27 +86,47 @@ const nodeData = {
  */
 const dndNodes = [
   {
-    key: 'square', label: '正方形', data: {shape: 'rect', width: 50, height: 50},
+    type: 'seat', label: '座位', data: {shape: 'rect', width: 50, height: 50},
   },
   {
-    key: 'circle', label: '圆形', data: {shape: 'circle', width: 50, height: 50},
+    type: 'square_table', label: '正方桌', data: {shape: 'rect', width: 50, height: 50},
   },
   {
-    key: 'rectangle', label: '长方形', data: {shape: 'rect', width: 100, height: 50},
+    type: 'circle_table', label: '圆形桌', data: {shape: 'circle', width: 50, height: 50},
   },
   {
-    key: 'hexagon', label: '六边形', data: {
+    type: 'rectangle_table', label: '长方桌', data: {shape: 'rect', width: 100, height: 50},
+  },
+  {
+    type: 'hexagon_table', label: '六边桌', data: {
       shape: 'polygon', width: 50, height: 50,
       points: '25,0 50,12.5 50,37.5 25,50 0,37.5 0,12.5',
     },
   },
   {
-    key: 'octagon', label: '八边形', data: {
+    type: 'octagon_table', label: '八边桌', data: {
       shape: 'polygon', width: 50, height: 50,
       points: '14.64,0 35.36,0 50,14.64 50,35.36 35.36,50 14.64,50 0,35.36 0,14.64',
     },
   },
 ]
+
+const strokeStyle = {
+  seat: {},
+  passage: {
+    stroke: '#676767',
+    strokeWidth: '1px',
+    rx: '6px',
+    ry: '6px',
+    fill: 'transparent',
+    strokeDasharray: '5.5',
+  },
+  square_table: {},
+  circle_table: {},
+  rectangle_table: {},
+  hexagon_table: {},
+  octagon_table: {},
+}
 
 export default {
   name: 'X6Graph',
@@ -122,6 +145,7 @@ export default {
       dnd: null,
       contextMenu: {x: 0, y: 0, show: false, node: null},
       nodes: [],
+      gradientId: 0,
     }
   },
 
@@ -222,23 +246,78 @@ export default {
       }
     },
 
-    handleStartDragItem(type, evt) {
-      const dnd = this.dndNodes.find(i => i.key === type)
-      const dndData = cloneDeep(dnd.data)
-      const data = merge(cloneDeep(nodeData), {
-        shape_type: type,
-        type: type == 'square' ? 'seat' : 'table',
-      })
-
-      const props = this.getNewShapeNodeProps(data, dndData)
-
-      console.log(props)
-      const node = this.graph.createNode(props)
-      data.index = node.id
-      node.setData(data)
-
-      this.nodes.push(node.getData())
+    handleStartDragItem(dnd, evt) {
+      /**
+       * {type: 'seat', label: '座位', data: {shape: 'rect', width: 50, height: 50}},
+       * {"id":null,"state":"available","type":"seat","tags":[],"graph":null}'
+       */
+      const data = merge(cloneDeep(nodeItem), {type: dnd.type})
+      const attrs = this.getNodeAttrsFromNodeDate(data)
+      console.log(attrs)
+      const node = this.graph.createNode(attrs)
       this.dnd.start(node, evt)
+    },
+
+    getNextGradientId() {
+      this.gradientId++
+      return this.gradientId
+    },
+
+    getNodeAttrsFromNodeDate(data) {
+      const props = {
+        data: data,
+        attrs: {
+          body: {strokeWidth: '1px', rx: '6px', ry: '6px', stroke: '#676767'},
+        },
+      }
+
+      // 过道样式
+      if (data.type === 'passage') {
+        props.label = this.passageNodeAttr.label
+        props.attrs.body = this.passageNodeAttr.rect
+      }
+
+      // 课桌
+      if (data.type === 'table') {
+        props.label = this.tableNodeAttr.label
+        props.attrs.body = this.tableNodeAttr.rect
+      }
+
+      // 座位, 不可用
+      if (data.type === 'seat' && data.state === 'blocked') {
+        props.label = this.blockedNodeAttr.label
+        props.attrs.body = this.blockedNodeAttr.rect
+      }
+
+      // 座位, 不显示
+      if (data.type === 'seat' && data.state === 'not_show') {
+        props.label = this.notShowNodeAttr.label
+        props.attrs.body = this.notShowNodeAttr.rect
+      }
+
+      // 标签
+      if (data.type === 'seat' && data.tags.length) {
+        const gradientItems = this.getGradientItems(data.tags)
+        const gradientId = `gradient-id-${ this.getNextGradientId() }`
+        props.markup = [
+          {
+            tagName: 'defs', children: [
+              {
+                tagName: 'linearGradient', attrs: {id: gradientId, x1: '0%', y1: '0%', x2: '0%', y2: '100%'},
+                children: gradientItems,
+              },
+            ],
+          },
+          {tagName: 'rect', selector: 'tags'},
+          {tagName: 'text', selector: 'label'},
+        ]
+        props.attrs.tags = {
+          stroke: '#676767', strokeWidth: '1px', rx: '6px', ry: '6px', width: props.width, height: props.height,
+          fill: `url(#${ gradientId })`,
+        }
+      }
+
+      return props
     },
 
     getGradientItems(ids) {
@@ -320,6 +399,7 @@ export default {
 
       this.$nextTick(_ => this.type === 'normal' && this.resetZoom())
     },
+
 
     getNewShapeNodeProps(node, attrs) {
       console.log(node, attrs)
@@ -572,11 +652,16 @@ export default {
 
       // 添加节点
       this.graph.on('node:added', ({node}) => {
+        console.log(this.graph.getNodesUnderNode(node))
         // if (this.type === 'shape') {
         //   const data = node.getData()
         //   this.nodes.push(data)
         //   // console.log(this.nodes)
         // }
+      })
+
+      this.graph.on('node:moved', ({e, x, y, node, view}) => {
+        console.log(e, x, y, node, view)
       })
 
       this.graph.on('node:resized', _ => {
