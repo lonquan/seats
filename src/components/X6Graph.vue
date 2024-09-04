@@ -1,14 +1,8 @@
 <template>
   <div class="x-container">
-    <div class="x-dnd-wrap" ref="dndContainer" v-show="type === 'shape'">
-      <div
-          v-for="(i) in dndNodes"
-          class="dnd-item"
-          :class="`dnd-${i.type}`"
-          :key="i.type"
-          @mousedown="evt => handleStartDragItem(i, evt)"
-      >{{ i.label }}
-      </div>
+    <div class="x-dnd-wrap" ref="dndContainer" v-show="type === 'custom'">
+      <div class="dnd-item" @mousedown="evt => handleStartDragItem(evt)"></div>
+
     </div>
 
     <div class="x-container">
@@ -35,7 +29,8 @@ import {Selection} from '@antv/x6-plugin-selection'
 import {Transform} from '@antv/x6-plugin-transform'
 import {Snapline} from '@antv/x6-plugin-snapline'
 import {Dnd} from '@antv/x6-plugin-dnd'
-import {cloneDeep, merge} from 'lodash'
+import {History} from '@antv/x6-plugin-history'
+import {merge} from 'lodash'
 
 /**
  * 获取节点竖轴 key
@@ -58,80 +53,86 @@ const getColKey = (key) => {
  * 节点状态
  * @type {{blocked: string, available: string, not_show: string}}
  */
-const createStatus = {
-  available: '正常', blocked: '不可用', not_show: '不显示',
+const status = {
+  normal: '正常', blocked: '不可用', not_show: '不显示',
 }
 
 /**
  * 节点类型
  * @type {{seat: string, passage: string, table: string}}
+ const types = {
+ seat: '座位', passage: '通道',
+ square_table: '正方桌', circle_table: '圆形桌',
+ rectangle_table: '长方桌', hexagon_table: '六边桌',
+ octagon_table: '八边桌',
+ }
  */
-const types = {
-  seat: '座位', passage: '通道',
-  square_table: '正方桌', circle_table: '圆形桌',
-  rectangle_table: '长方桌', hexagon_table: '六边桌',
-  octagon_table: '八边桌',
-}
 
 /**
  * 节点默认数据
  * @type {{id: null, state: string, type: string, tags: number[]}}
  */
-const nodeItem = {
-  id: null, state: 'available', type: 'seat', tags: [], graph: null,
-}
+const nodeItem = _ => ({
+  id: null, state: 'normal', type: 'seat', tags: [], graph: null,
+})
 
 /**
  * 可拖动的节点配置
+ const dndNodes = [
+ {
+ type: 'seat', label: '座位', data: {shape: 'rect', width: 50, height: 50},
+ },
+ {
+ type: 'square_table', label: '正方桌', data: {shape: 'rect', width: 50, height: 50},
+ },
+ {
+ type: 'circle_table', label: '圆形桌', data: {shape: 'circle', width: 50, height: 50},
+ },
+ {
+ type: 'rectangle_table', label: '长方桌', data: {shape: 'rect', width: 100, height: 50},
+ },
+ {
+ type: 'hexagon_table', label: '六边桌', data: {
+ shape: 'polygon', width: 50, height: 50,
+ points: '25,0 50,12.5 50,37.5 25,50 0,37.5 0,12.5',
+ },
+ },
+ {
+ type: 'octagon_table', label: '八边桌', data: {
+ shape: 'polygon', width: 50, height: 50,
+ points: '14.64,0 35.36,0 50,14.64 50,35.36 35.36,50 14.64,50 0,35.36 0,14.64',
+ },
+ },
+ ]
  */
-const dndNodes = [
-  {
-    type: 'seat', label: '座位', data: {shape: 'rect', width: 50, height: 50},
-  },
-  {
-    type: 'square_table', label: '正方桌', data: {shape: 'rect', width: 50, height: 50},
-  },
-  {
-    type: 'circle_table', label: '圆形桌', data: {shape: 'circle', width: 50, height: 50},
-  },
-  {
-    type: 'rectangle_table', label: '长方桌', data: {shape: 'rect', width: 100, height: 50},
-  },
-  {
-    type: 'hexagon_table', label: '六边桌', data: {
-      shape: 'polygon', width: 50, height: 50,
-      points: '25,0 50,12.5 50,37.5 25,50 0,37.5 0,12.5',
-    },
-  },
-  {
-    type: 'octagon_table', label: '八边桌', data: {
-      shape: 'polygon', width: 50, height: 50,
-      points: '14.64,0 35.36,0 50,14.64 50,35.36 35.36,50 14.64,50 0,35.36 0,14.64',
-    },
-  },
-]
 
 const strokeStyle = {
-  seat: {},
-  passage: {
-    stroke: '#676767',
-    strokeWidth: '1px',
-    rx: '6px',
-    ry: '6px',
-    fill: 'transparent',
-    strokeDasharray: '5.5',
-  },
-  square_table: {},
-  circle_table: {},
-  rectangle_table: {},
-  hexagon_table: {},
-  octagon_table: {},
+  normal: (size) => ({
+    body: {
+      strokeWidth: '1px', rx: '8px', ry: '8px', stroke: '#676767', fill: '#ffffff', strokeDasharray: null,
+      width: size.width, height: size.height,
+    },
+    label: {
+      fontSize: 14, fill: '#000000', refX: 0.5, refY: 0.5, textAnchor: 'middle', textVerticalAnchor: 'middle',
+    },
+  }),
+  dotted: (size) => ({
+    body: {
+      stroke: '#676767', strokeWidth: '1px', rx: '8px', ry: '8px', fill: 'transparent', strokeDasharray: '5.5',
+      width: size.width, height: size.height,
+    },
+    label: {
+      fontSize: 14, fill: '#000000', refX: 0.5, refY: 0.5, textAnchor: 'middle', textVerticalAnchor: 'middle',
+    },
+  }),
 }
+
+const defaultSize = {width: 50, height: 50}
 
 export default {
   name: 'X6Graph',
   props: {
-    type: {required: true, validator: value => ['normal', 'shape'].includes(value)},
+    type: {required: true, validator: value => ['normal', 'custom'].includes(value)},
     rows: {required: true, type: Number, default: 0},
     cols: {required: true, type: Number, default: 0},
     items: {required: true, type: Array},
@@ -144,21 +145,13 @@ export default {
       graph: null,
       dnd: null,
       contextMenu: {x: 0, y: 0, show: false, node: null},
-      nodes: [],
       gradientId: 0,
     }
   },
 
   watch: {
-    '$props.rows'() {
-      this.nodes = []
-    },
-    '$props.cols'() {
-      this.nodes = []
-    },
     '$props.type'(newVal, oldVal) {
-      this.graph.clearCells()
-      this.nodes = []
+      this.cleanGraph()
     },
   },
 
@@ -166,20 +159,12 @@ export default {
     nodeTotal() {
       return this.$props.rows * this.$props.cols
     },
-    dndNodes() {
-      return dndNodes
-    },
     contextMenuConfig() {
       return [
         {
-          value: 'type', label: '类型',
-          disabled: this.type === 'shape',
-          children: Object.entries(types).map(item => ({label: item[1], value: item[0]})),
-        },
-        {
           value: 'state',
           label: '状态',
-          children: Object.entries(createStatus).map(item => ({label: item[1], value: item[0]})),
+          children: Object.entries(status).map(item => ({label: item[1], value: item[0]})),
         },
         {
           value: 'tags', label: '标签', children: [
@@ -191,393 +176,43 @@ export default {
           ],
         },
         {
-          value: 'del', label: '删除', disabled: this.type === 'normal',
+          value: 'del', label: '删除',
         },
       ]
-    },
-    passageNodeAttr() {
-      return {
-        rect: {
-          stroke: '#676767',
-          strokeWidth: '1px',
-          rx: '6px',
-          ry: '6px',
-          fill: 'transparent',
-          strokeDasharray: '5.5',
-        },
-        label: '通道',
-      }
-    },
-    blockedNodeAttr() {
-      return {
-        rect: {stroke: '#676767', strokeWidth: '1px', rx: '6px', ry: '6px', strokeDasharray: '5.5'},
-        label: '不可用',
-      }
-    },
-    notShowNodeAttr() {
-      return {
-        rect: {stroke: '#676767', strokeWidth: '1px', rx: '6px', ry: '6px', strokeDasharray: '5.5'},
-        label: '不显示',
-      }
-    },
-    tableNodeAttr() {
-      return {
-        rect: {stroke: '#676767', strokeWidth: '1px', rx: '6px', ry: '6px', strokeDasharray: '5.5'},
-        label: '桌',
-      }
     },
   },
 
   mounted() {
-    this.nodes = this.$props.items
     this.makeGraphInstance()
-    this.nodes.length && this.draw()
     this.listenEvent()
-    // this.resetZoom()
   },
 
   methods: {
-    handleExport() {
-      const {rows, cols, type} = this.$props
-
-      return {
-        rows, cols, type, total: this.nodeTotal,
-        items: this.nodes,
-      }
-    },
-
-    handleStartDragItem(dnd, evt) {
-      /**
-       * {type: 'seat', label: '座位', data: {shape: 'rect', width: 50, height: 50}},
-       * {"id":null,"state":"available","type":"seat","tags":[],"graph":null}'
-       */
-      const data = merge(cloneDeep(nodeItem), {type: dnd.type})
-      const attrs = this.getNodeAttrsFromNodeDate(data)
-      console.log(attrs)
-      const node = this.graph.createNode(attrs)
-      this.dnd.start(node, evt)
-    },
-
-    getNextGradientId() {
-      this.gradientId++
-      return this.gradientId
-    },
-
-    getNodeAttrsFromNodeDate(data) {
-      const props = {
-        data: data,
-        attrs: {
-          body: {strokeWidth: '1px', rx: '6px', ry: '6px', stroke: '#676767'},
-        },
-      }
-
-      // 过道样式
-      if (data.type === 'passage') {
-        props.label = this.passageNodeAttr.label
-        props.attrs.body = this.passageNodeAttr.rect
-      }
-
-      // 课桌
-      if (data.type === 'table') {
-        props.label = this.tableNodeAttr.label
-        props.attrs.body = this.tableNodeAttr.rect
-      }
-
-      // 座位, 不可用
-      if (data.type === 'seat' && data.state === 'blocked') {
-        props.label = this.blockedNodeAttr.label
-        props.attrs.body = this.blockedNodeAttr.rect
-      }
-
-      // 座位, 不显示
-      if (data.type === 'seat' && data.state === 'not_show') {
-        props.label = this.notShowNodeAttr.label
-        props.attrs.body = this.notShowNodeAttr.rect
-      }
-
-      // 标签
-      if (data.type === 'seat' && data.tags.length) {
-        const gradientItems = this.getGradientItems(data.tags)
-        const gradientId = `gradient-id-${ this.getNextGradientId() }`
-        props.markup = [
-          {
-            tagName: 'defs', children: [
-              {
-                tagName: 'linearGradient', attrs: {id: gradientId, x1: '0%', y1: '0%', x2: '0%', y2: '100%'},
-                children: gradientItems,
-              },
-            ],
-          },
-          {tagName: 'rect', selector: 'tags'},
-          {tagName: 'text', selector: 'label'},
-        ]
-        props.attrs.tags = {
-          stroke: '#676767', strokeWidth: '1px', rx: '6px', ry: '6px', width: props.width, height: props.height,
-          fill: `url(#${ gradientId })`,
-        }
-      }
-
-      return props
-    },
-
-    getGradientItems(ids) {
-      const tags = []
-      const items = []
-      ids.forEach(id => {
-        const tag = this.tags.find(t => t.id === id)
-        if (tag) {
-          tags.push(tag)
-        }
-      })
-
-      // {tagName: 'stop', attrs: {offset: '0%', style: 'stop-color:red;stop-opacity:1'}},
-      let step = 100 / tags.length
-
-      let prev = 0
-      for (let i = 1; i <= tags.length; i++) {
-        const currentStep = step * i
-        const tag = tags[i - 1]
-        items.push(
-            {tagName: 'stop', attrs: {offset: `${ prev }%`, style: `stop-color:${ tag.color };stop-opacity:1`}},
-            {tagName: 'stop', attrs: {offset: `${ currentStep }%`, style: `stop-color:${ tag.color };stop-opacity:1`}},
-        )
-        prev = currentStep
-      }
-      return items
-    },
-
-    handleChooseMenu(val) {
-      const [action, value, tag = null] = val
-      let cells = this.graph.getSelectedCells()
-
-      cells = cells.length ? cells.map(c => c.getData()) : [this.contextMenu.node]
-
-      cells.forEach(cell => {
-        const nodeIdx = this.nodes.findIndex(n => n.index === cell.index)
-        // 移除节点
-        if (action === 'del') {
-          this.graph.removeCell(cell.index)
-          this.nodes.splice(nodeIdx, 1)
-        }
-
-        // 类型选择, 修改状态
-        if (['type', 'state'].includes(action)) {
-          this.$set(this.nodes[nodeIdx], action, value)
-        }
-
-        // 添加标签
-        if (action === 'tags' && value === 'add') {
-          const tags = this.nodes[nodeIdx].tags
-          const tagIdx = tags.findIndex(t => t === tag)
-
-          if (tagIdx === -1) {
-            tags.push(tag)
-            tags.sort()
-          }
-
-          this.$set(this.nodes[nodeIdx], 'tags', tags)
-        }
-
-        // 清空标签
-        if (action === 'tags' && value === 'clean') {
-          this.$set(this.nodes[nodeIdx], 'tags', [])
-        }
-      })
-
-      this.graph.resetSelection()
-      this.contextMenu.show = false
-      this.contextMenu.node = null
-
-      this.$nextTick(_ => {
-        this.draw()
+    export() {
+      this.graph.getNodes().forEach(n => {
+        console.log({
+          i: n.id,
+          p: n.prop().attrs?.text?.text,
+          'd': n.getData(),
+        })
       })
     },
 
-    draw() {
-      this.type === 'normal' && this.drawNormalGraph()
-      this.type === 'shape' && this.drawShapeGraph()
-
-      this.$nextTick(_ => this.type === 'normal' && this.resetZoom())
-    },
-
-
-    getNewShapeNodeProps(node, attrs) {
-      console.log(node, attrs)
-      const props = cloneDeep(attrs)
-
-      props.attrs = {
-        body: {strokeWidth: '1px', rx: '6px', ry: '6px', stroke: '#676767'},
-      }
-
-      // 过道样式
-      if (node.type === 'passage') {
-        props.label = this.passageNodeAttr.label
-        props.attrs.body = this.passageNodeAttr.rect
-      }
-
-      // 课桌
-      if (node.type === 'table') {
-        props.label = this.tableNodeAttr.label
-        props.attrs.body = this.tableNodeAttr.rect
-      }
-
-      // 座位, 不可用
-      if (node.type === 'seat' && node.state === 'blocked') {
-        props.label = this.blockedNodeAttr.label
-        props.attrs.body = this.blockedNodeAttr.rect
-      }
-
-      // 座位, 不显示
-      if (node.type === 'seat' && node.state === 'not_show') {
-        props.label = this.notShowNodeAttr.label
-        props.attrs.body = this.notShowNodeAttr.rect
-      }
-
-      // 标签
-      if (node.type === 'seat' && node.tags.length) {
-        const gradientItems = this.getGradientItems(node.tags)
-        const gradientId = `gradient-idx-${ node.index }`
-        props.markup = [
-          {
-            tagName: 'defs', children: [
-              {
-                tagName: 'linearGradient', attrs: {id: gradientId, x1: '0%', y1: '0%', x2: '0%', y2: '100%'},
-                children: gradientItems,
-              },
-            ],
-          },
-          {tagName: 'rect', selector: 'tags'},
-          {tagName: 'text', selector: 'label'},
-        ]
-        props.attrs.tags = {
-          stroke: '#676767', strokeWidth: '1px', rx: '6px', ry: '6px', width: props.width, height: props.height,
-          fill: `url(#${ gradientId })`,
-        }
-      }
-
-      return props
-    },
-
-    getNewNodeProps(node, width, height) {
-      const nodeProp = {
-        label: null,
-        markup: [
-          {tagName: 'rect', selector: 'body'},
-          {tagName: 'text', selector: 'label'},
-        ],
-        attrs: {
-          body: {strokeWidth: '1px', rx: '6px', ry: '6px', stroke: '#676767'},
-          label: {fontSize: '12px'},
-        },
-      }
-
-      // 过道样式
-      if (node.type === 'passage') {
-        nodeProp.label = this.passageNodeAttr.label
-        nodeProp.attrs.body = this.passageNodeAttr.rect
-      }
-
-      // 课桌
-      if (node.type === 'table') {
-        nodeProp.label = this.tableNodeAttr.label
-        nodeProp.attrs.body = this.tableNodeAttr.rect
-      }
-
-      // 座位, 不可用
-      if (node.type === 'seat' && node.state === 'blocked') {
-        nodeProp.label = this.blockedNodeAttr.label
-        nodeProp.attrs.body = this.blockedNodeAttr.rect
-      }
-
-      // 座位, 不显示
-      if (node.type === 'seat' && node.state === 'not_show') {
-        nodeProp.label = this.notShowNodeAttr.label
-        nodeProp.attrs.body = this.notShowNodeAttr.rect
-      }
-
-      // 标签
-      if (node.type === 'seat' && node.tags.length) {
-        const gradientItems = this.getGradientItems(node.tags)
-        const gradientId = `gradient-idx-${ node.index }`
-        nodeProp.markup = [
-          {
-            tagName: 'defs', children: [
-              {
-                tagName: 'linearGradient', attrs: {id: gradientId, x1: '0%', y1: '0%', x2: '0%', y2: '100%'},
-                children: gradientItems,
-              },
-            ],
-          },
-          {tagName: 'rect', selector: 'tags'},
-          {tagName: 'text', selector: 'label'},
-        ]
-        nodeProp.attrs.tags = {
-          stroke: '#676767', strokeWidth: '1px', rx: '6px', ry: '6px', width: width, height: height,
-          fill: `url(#${ gradientId })`,
-        }
-      }
-
-      return cloneDeep(nodeProp)
-    },
-
-    drawShapeGraph() {
-      console.clear()
-      const nodesModel = this.graph.getNodes()
-
-      this.nodes.forEach(node => {
-        const nodeModel = nodesModel.find(nm => nm.id === node.index)
-
-        if (!nodeModel) {
-          return
-        }
-
-        const {size, position} = nodeModel.prop()
-        const dnd = this.dndNodes.find(i => i.key === node.shape_type)
-        const _position = {
-          width: size.width,
-          height: size.height,
-          x: position.x,
-          y: position.y,
-        }
-        const props = this.getNewShapeNodeProps(node, merge(cloneDeep(dnd.data), _position))
-
-        const newNode = this.graph.createNode(props)
-        node.index = newNode.id
-        node.position = _position
-        newNode.setData(node)
-        console.log('getData', newNode.getData())
-        this.graph.removeCell(nodeModel.id)
-        this.graph.addNode(newNode, {silent: false})
-      })
-
-      console.log('nodes', this.nodes)
-    },
-
-    drawNormalGraph() {
-      // 修剪到指定长度
-      this.nodes.splice(this.nodeTotal)
-      // 需要填充的长度
-      const pad = this.nodeTotal - this.nodes.length
-
-      if (pad > 0) {
-        for (let r = 0; r < pad; r++) {
-          this.nodes.push(cloneDeep(nodeData))
-        }
-      }
-
-      // 清空画布
+    makeSeats() {
       this.graph.clearCells()
+
+      const total = this.nodeTotal
       // 距离最外面的边距
       const padding = 150
       // 每个座位之间的距离
-      const gap = 25
+      const gap = defaultSize.width / 2
       // 每个座位的大小
-      const size = 50
+      const size = defaultSize.width
 
       let rowStep = 0
       let colStep = 0
 
-      this.nodes.forEach((item, index) => {
+      for (let i = 0; i < total; i++) {
         // 行标签
         if (colStep === 0) {
           this.graph.addNode({
@@ -610,24 +245,11 @@ export default {
           })
         }
 
-        const props = this.getNewNodeProps(item, size, size)
+        const attrs = this.getNodeAttrsFromNodeDate(nodeItem())
+        attrs.x = padding + colStep * size + colStep * gap
+        attrs.y = padding + rowStep * size + rowStep * gap
 
-        const nodeStats = {
-          shape: 'rect',
-          y: padding + rowStep * size + rowStep * gap,
-          x: padding + colStep * size + colStep * gap,
-          width: size,
-          height: size,
-          data: item,
-          label: props.label,
-          markup: props.markup,
-          attrs: props.attrs,
-        }
-
-        // 添加到画布
-        const node = this.graph.addNode(nodeStats)
-        item.index = node.id
-        node.setData(item, {overwrite: true, silent: true})
+        this.graph.addNode(attrs)
 
         // 下一列
         colStep++
@@ -637,35 +259,180 @@ export default {
           rowStep++
           colStep = 0
         }
+      }
+
+      this.resetZoom()
+    },
+
+    cleanGraph() {
+      this.graph.clearCells()
+    },
+
+    handleChooseMenu(context) {
+      const [action, value, tag = null] = context
+      let nodes = this.graph.getSelectedCells()
+      nodes = nodes.length ? nodes : [this.contextMenu.node]
+
+      nodes.forEach(node => {
+        // 移除节点
+        if (action === 'del') {
+          return this.graph.removeNode(node)
+        }
+
+        const data = node.getData()
+        // 修改状态
+        if (action === 'state') {
+          data.state = value
+        }
+
+        // 添加标签
+        else if (action === 'tags' && value === 'add') {
+          const idx = data.tags.findIndex(t => tag === t)
+          if (idx === -1) {
+            data.tags.push(tag)
+            data.tags.length > 1 && data.tags.sort()
+          }
+        }
+
+        // 清空标签
+        else if (action === 'tags' && value === 'clean') {
+          data.tags = []
+        }
+
+        this.updateNodeAttrs(node, data)
       })
+
+
+      this.graph.resetSelection()
+      this.contextMenu.show = false
+      this.contextMenu.node = null
+
+      // console.log(this.graph.getNodes())
+    },
+
+    handleStartDragItem(evt) {
+      const attrs = this.getNodeAttrsFromNodeDate(nodeItem())
+      const node = this.graph.createNode(attrs)
+      this.dnd.start(node, evt)
+    },
+
+    getNextGradientId() {
+      this.gradientId++
+      return this.gradientId
+    },
+
+    getNodeAttrsFromNodeDate(data, size = {}) {
+      const width = size.width || defaultSize.width
+      const height = size.height || defaultSize.height
+
+      const props = {
+        data: data,
+        attrs: strokeStyle.normal(size),
+        markup: [
+          {tagName: 'rect', selector: 'body'},
+          {tagName: 'text', selector: 'label'},
+        ],
+        width: width,
+        height: height,
+      }
+
+      props.attrs.label.text = ''
+
+      if (['blocked', 'not_show'].includes(data.state)) {
+        props.attrs = strokeStyle.dotted(size)
+        props.attrs.label.text = status?.[data.state]
+      }
+
+      // 标签
+      else if (data.state === 'normal' && data.tags?.length) {
+        const gradientId = `gradient-id-${ this.getNextGradientId() }`
+        props.markup = [
+          {
+            tagName: 'defs', children: [
+              {
+                tagName: 'linearGradient', attrs: {id: gradientId, x1: '0%', y1: '0%', x2: '0%', y2: '100%'},
+                children: this.getGradientItems(data.tags),
+              },
+            ],
+          },
+          {tagName: 'rect', selector: 'body'},
+          {tagName: 'text', selector: 'label'},
+        ]
+        props.attrs.body = {
+          stroke: '#676767', strokeWidth: '1px', rx: '6px', ry: '6px', width: width, height: height,
+          fill: `url(#${ gradientId })`,
+        }
+      }
+
+      return props
+    },
+
+    getGradientItems(ids) {
+      const tags = []
+      const items = []
+      ids.forEach(id => {
+        const tag = this.tags.find(t => t.id === id)
+        tag && tags.push(tag)
+      })
+
+      // {tagName: 'stop', attrs: {offset: '0%', style: 'stop-color:red;stop-opacity:1'}},
+      let step = 100 / tags.length
+
+      let prev = 0
+      for (let i = 1; i <= tags.length; i++) {
+        const currentStep = step * i
+        const tag = tags[i - 1]
+        items.push(
+            {tagName: 'stop', attrs: {offset: `${ prev }%`, style: `stop-color:${ tag.color };stop-opacity:1`}},
+            {tagName: 'stop', attrs: {offset: `${ currentStep }%`, style: `stop-color:${ tag.color };stop-opacity:1`}},
+        )
+        prev = currentStep
+      }
+      return items
+    },
+
+    updateNodeAttrs(node, data) {
+      const props = this.getNodeAttrsFromNodeDate(data, node.size())
+      node.setMarkup(props.markup, {silent: false})
+      node.setAttrs(props.attrs, {overwrite: true, silent: false})
+      node.replaceData(data, {silent: false})
+    },
+
+    hasCovered(node) {
+      if (this.graph.getNodesUnderNode(node).length) {
+        this.graph.undoAndCancel()
+        return true
+      }
+
+      return false
     },
 
     listenEvent() {
       // 右击元素
       this.graph.on('node:contextmenu', ({e, x, y, node, view}) => {
-        // console.log('node:contextmenu', node.getData())
         this.contextMenu.x = e.clientX
         this.contextMenu.y = e.clientY
-        this.contextMenu.node = node.getData()
+        this.contextMenu.node = node
         this.contextMenu.show = true
       })
 
-      // 添加节点
+      // 节点添加
       this.graph.on('node:added', ({node}) => {
-        console.log(this.graph.getNodesUnderNode(node))
-        // if (this.type === 'shape') {
-        //   const data = node.getData()
-        //   this.nodes.push(data)
-        //   // console.log(this.nodes)
-        // }
+        if (this.graph.getNodesUnderNode(node).length) {
+          return this.graph.removeNode(node)
+        }
       })
 
+      // 移动
       this.graph.on('node:moved', ({e, x, y, node, view}) => {
-        console.log(e, x, y, node, view)
+        this.hasCovered(node)
       })
 
-      this.graph.on('node:resized', _ => {
-        this.draw()
+      // 缩放
+      this.graph.on('node:resized', ({e, x, y, node, view}) => {
+        this.hasCovered(node)
+
+        this.updateNodeAttrs(node, node.getData())
       })
     },
 
@@ -697,7 +464,7 @@ export default {
           modifiers: ['alt'],
         },
         interacting: { // 节点拖动
-          nodeMovable: () => this.type === 'shape',
+          nodeMovable: () => true,
         },
         translating: { // 限制节点移动范围
           restrict: true,
@@ -707,7 +474,7 @@ export default {
     },
 
     makeGraphInstance() {
-      console.log(this.getGraphConfig())
+      // console.log(this.getGraphConfig())
       this.graph = new Graph({
         container: this.$refs.graph,
         ...this.getGraphConfig(),
@@ -718,20 +485,20 @@ export default {
         enabled: true,
         multiple: false,
         rubberband: true,
-        movable: () => this.type === 'shape',
+        movable: () => this.type === 'custom',
         showNodeSelectionBox: true,
         showEdgeSelectionBox: true,
         pointerEvents: 'none',
         strict: false,
         className: 'x-selector',
         modifiers: ['shift'],
-        filter: (cell) => cell.getData()?.id !== undefined,
+        // filter: (cell) => cell.getData()?.id !== undefined,
       }))
 
       // 调整大小
       this.graph.use(new Transform({
         resizing: {
-          enabled: () => this.type === 'shape',
+          enabled: () => this.type === 'custom',
           minWidth: 50,
           minHeight: 50,
           preserveAspectRatio: true,
@@ -759,6 +526,9 @@ export default {
         getDropNode: (node) => node.clone({keepId: true}),
         validateNode: (node, options) => true,
       })
+
+      // 历史记录
+      this.graph.use(new History({enabled: true}))
     },
   },
 }

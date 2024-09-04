@@ -6,7 +6,6 @@
           <el-alert :closable="false">
             <p>保存后不可修改位置, 仅可修改属性</p>
             <p>切换类型会清空已有数据</p>
-            <p>异形仅方形可设置为座位, 其他均为桌位</p>
           </el-alert>
 
           <el-alert :closable="false">
@@ -29,7 +28,7 @@
             <el-form-item label="类型">
               <el-radio-group v-model="layout.type">
                 <el-radio label="normal">普通</el-radio>
-                <el-radio label="shape">自定义</el-radio>
+                <el-radio label="custom">自定义</el-radio>
               </el-radio-group>
             </el-form-item>
 
@@ -44,7 +43,7 @@
             </template>
 
             <el-form-item label="">
-              <el-button @click="handleCalculateLayout">确定</el-button>
+              <el-button @click="handleCalculateLayout">生成</el-button>
               <el-button @click="handleSave">保存</el-button>
             </el-form-item>
 
@@ -58,8 +57,6 @@
 <script>
 /* eslint-disable */
 import X6Graph from '@/components/X6Graph.vue'
-
-import bg from '@/assets/bg.jpg'
 
 export default {
   name: 'App',
@@ -87,12 +84,12 @@ export default {
   data() {
     return {
       layout: {
-        type: 'shape', rows: 4, cols: 6, items: [],
+        type: 'custom', rows: 4, cols: 6, items: [],
       },
       config: {
         /* x6 config */
         // @see https://x6.antv.antgroup.com/api/graph/background
-        background: {color: '#F2F7FA', image: bg},
+        // background: {color: '#F2F7FA', image: bg},
       },
     }
   },
@@ -102,14 +99,11 @@ export default {
 
   methods: {
     handleSave() {
-      console.log(this.$refs.x6.handleExport())
-
-      console.log(JSON.stringify(this.$refs.x6.handleExport()))
+      console.log(this.$refs.x6.export())
     },
 
     handleCalculateLayout() {
-      // 确认数量后, 手动画
-      this.$refs.x6.draw()
+      this.$refs.x6.makeSeats()
     },
   },
 }
