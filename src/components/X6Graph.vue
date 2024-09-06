@@ -1,8 +1,7 @@
 <template>
   <div class="x-container">
-    <div class="x-dnd-wrap" ref="dndContainer" v-show="type === 'custom'">
-      <div class="dnd-item" @mousedown="evt => handleStartDragItem(evt)"></div>
-
+    <div class="x-dnd-wrap" ref="dndContainer" v-show="graphType === 'custom'">
+      <div class="dnd-item" @mousedown="evt => handlerStartDragItem(evt)"></div>
     </div>
 
     <div class="x-container">
@@ -15,7 +14,7 @@
         <el-cascader-panel
             :props="{expandTrigger: 'hover', multiple: false}"
             :options="contextMenuConfig"
-            @change="handleChooseMenu"
+            @change="handlerChooseMenu"
         />
       </div>
     </div>
@@ -72,8 +71,8 @@ const status = {
  * 节点默认数据
  * @type {{id: null, state: string, type: string, tags: number[]}}
  */
-const nodeItem = _ => ({
-  id: null, state: 'normal', type: 'seat', tags: [], graph: null,
+const nodeItem = (type = 'seat') => ({
+  id: null, state: 'normal', type: type, tags: [], graph: null,
 })
 
 /**
@@ -137,11 +136,14 @@ export default {
     cols: {required: true, type: Number, default: 0},
     items: {required: true, type: Array},
     config: {type: Object, default: () => ({})},
+    background: {type: Object, default: () => null},
     tags: {type: Array},
   },
 
   data() {
     return {
+      graphType: '',
+      nodeTotal: 0,
       graph: null,
       dnd: null,
       contextMenu: {x: 0, y: 0, show: false, node: null},
@@ -149,16 +151,7 @@ export default {
     }
   },
 
-  watch: {
-    '$props.type'(newVal, oldVal) {
-      this.cleanGraph()
-    },
-  },
-
   computed: {
-    nodeTotal() {
-      return this.$props.rows * this.$props.cols
-    },
     contextMenuConfig() {
       return [
         {
@@ -198,10 +191,22 @@ export default {
       })
     },
 
-    makeSeats() {
-      this.graph.clearCells()
+    make() {
+      this.graphType = this.$props.type
+      this.cleanGraph()
 
-      const total = this.nodeTotal
+      this.graphType === 'custom' && this.makeCustomGraph()
+      this.graphType === 'normal' && this.makeNormalGraph()
+
+      this.resetZoom()
+    },
+
+    makeCustomGraph() {
+      console.log(this.background)
+    },
+
+    makeNormalGraph() {
+      const total = this.nodeTotal = this.$props.rows * this.$props.cols
       // 距离最外面的边距
       const padding = 150
       // 每个座位之间的距离
@@ -226,6 +231,7 @@ export default {
               rect: {fill: 'transparent', stroke: null},
               text: {fontSize: '30px', fill: '#676767'},
             },
+            data: nodeItem('row_title'),
           })
         }
 
@@ -242,6 +248,7 @@ export default {
               rect: {fill: 'transparent', stroke: null},
               text: {fontSize: '30px', fill: '#676767'},
             },
+            data: nodeItem('col_title'),
           })
         }
 
@@ -260,26 +267,29 @@ export default {
           colStep = 0
         }
       }
-
-      this.resetZoom()
     },
 
     cleanGraph() {
       this.graph.clearCells()
+      this.graph.clearBackground()
     },
 
-    handleChooseMenu(context) {
+    handlerChooseMenu(context) {
       const [action, value, tag = null] = context
       let nodes = this.graph.getSelectedCells()
       nodes = nodes.length ? nodes : [this.contextMenu.node]
 
       nodes.forEach(node => {
+        const data = node.getData()
+        if (data.type !== 'seat') {
+          return
+        }
+
         // 移除节点
         if (action === 'del') {
           return this.graph.removeNode(node)
         }
 
-        const data = node.getData()
         // 修改状态
         if (action === 'state') {
           data.state = value
@@ -310,7 +320,7 @@ export default {
       // console.log(this.graph.getNodes())
     },
 
-    handleStartDragItem(evt) {
+    handlerStartDragItem(evt) {
       const attrs = this.getNodeAttrsFromNodeDate(nodeItem())
       const node = this.graph.createNode(attrs)
       this.dnd.start(node, evt)
@@ -410,6 +420,10 @@ export default {
     listenEvent() {
       // 右击元素
       this.graph.on('node:contextmenu', ({e, x, y, node, view}) => {
+        if (node.getData()?.type !== 'seat') {
+          return
+        }
+
         this.contextMenu.x = e.clientX
         this.contextMenu.y = e.clientY
         this.contextMenu.node = node
@@ -485,11 +499,11 @@ export default {
         enabled: true,
         multiple: false,
         rubberband: true,
-        movable: () => this.type === 'custom',
+        movable: () => true,
         showNodeSelectionBox: true,
         showEdgeSelectionBox: true,
         pointerEvents: 'none',
-        strict: false,
+        strict: true,
         className: 'x-selector',
         modifiers: ['shift'],
         // filter: (cell) => cell.getData()?.id !== undefined,
@@ -498,7 +512,7 @@ export default {
       // 调整大小
       this.graph.use(new Transform({
         resizing: {
-          enabled: () => this.type === 'custom',
+          enabled: () => this.graphType === 'custom',
           minWidth: 50,
           minHeight: 50,
           preserveAspectRatio: true,

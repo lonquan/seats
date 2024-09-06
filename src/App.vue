@@ -32,6 +32,19 @@
               </el-radio-group>
             </el-form-item>
 
+            <template v-if="layout.type === 'custom'">
+              <el-form-item label="背景图">
+                <el-upload
+                    class="avatar-uploader"
+                    action="https://jsonplaceholder.typicode.com/posts/"
+                    :show-file-list="false"
+                    :before-upload="handlerImageChange"
+                >
+                  <i class="el-icon-plus"></i>
+                </el-upload>
+              </el-form-item>
+            </template>
+
             <template v-if="layout.type === 'normal'">
               <el-form-item label="横排数量">
                 <el-input-number v-model="layout.rows" :min="1"/>
@@ -43,8 +56,8 @@
             </template>
 
             <el-form-item label="">
-              <el-button @click="handleCalculateLayout">生成</el-button>
-              <el-button @click="handleSave">保存</el-button>
+              <el-button @click="handlerCalculateLayout">生成</el-button>
+              <el-button @click="handlerSave">保存</el-button>
             </el-form-item>
 
           </el-form>
@@ -71,6 +84,11 @@ export default {
         rows: this.layout.rows,
         cols: this.layout.cols,
         items: this.layout.items,
+        background: {
+          url: this.layout.bg,
+          width: this.layout.width,
+          height: this.layout.height,
+        },
         config: this.config,
         tags: [
           {id: 1, title: '安静', color: '#37A0FB'},
@@ -85,6 +103,7 @@ export default {
     return {
       layout: {
         type: 'custom', rows: 4, cols: 6, items: [],
+        bg: null, width: null, height: null,
       },
       config: {
         /* x6 config */
@@ -98,12 +117,38 @@ export default {
   },
 
   methods: {
-    handleSave() {
+    getImageSize(file) {
+      return new Promise((resolve, reject) => {
+        const objectUrl = URL.createObjectURL(file)
+
+        const img = new Image()
+
+        img.onload = function() {
+          const width = this.width
+          const height = this.height
+          // URL.revokeObjectURL(objectUrl)
+          resolve({width: width, height: height, url: objectUrl})
+        }
+
+        img.src = objectUrl
+      })
+    },
+    handlerImageChange(file) {
+      this.getImageSize(file).then(size => {
+        this.layout.width = size.width
+        this.layout.height = size.height
+        this.layout.bg = size.url
+      })
+
+      return Promise.reject()
+    },
+
+    handlerSave() {
       console.log(this.$refs.x6.export())
     },
 
-    handleCalculateLayout() {
-      this.$refs.x6.makeSeats()
+    handlerCalculateLayout() {
+      this.$refs.x6.make()
     },
   },
 }
@@ -122,5 +167,19 @@ export default {
   //width: 1920px;
   margin: 0 auto;
   padding-top: 20px;
+}
+
+.avatar-uploader .el-upload {
+  border: 1px dashed #d9d9d9;
+  border-radius: 6px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  width: 50px;
+  height: 50px;
+}
+
+.avatar-uploader .el-upload:hover {
+  border-color: #409EFF;
 }
 </style>
