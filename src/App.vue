@@ -60,6 +60,11 @@
               <el-button @click="handlerSave">保存</el-button>
             </el-form-item>
 
+            <el-form-item label="">
+              <el-button @click="handleImport('normal')">加载普通</el-button>
+              <el-button @click="handleImport('custom')">加载自定义</el-button>
+            </el-form-item>
+
           </el-form>
         </el-card>
       </el-col>
@@ -70,6 +75,7 @@
 <script>
 /* eslint-disable */
 import X6Graph from '@/components/X6Graph.vue'
+import mock from '@/data'
 
 export default {
   name: 'App',
@@ -85,7 +91,7 @@ export default {
         cols: this.layout.cols,
         items: this.layout.items,
         background: {
-          url: this.layout.bg,
+          url: this.layout.url,
           width: this.layout.width,
           height: this.layout.height,
         },
@@ -103,7 +109,7 @@ export default {
     return {
       layout: {
         type: 'custom', rows: 4, cols: 6, items: [],
-        bg: null, width: null, height: null,
+        url: null, width: null, height: null,
       },
       config: {
         /* x6 config */
@@ -137,7 +143,7 @@ export default {
       this.getImageSize(file).then(size => {
         this.layout.width = size.width
         this.layout.height = size.height
-        this.layout.bg = size.url
+        this.layout.url = size.url
       })
 
       return Promise.reject()
@@ -145,10 +151,36 @@ export default {
 
     handlerSave() {
       console.log(this.$refs.x6.export())
+      console.log(JSON.stringify(this.$refs.x6.export()))
     },
 
     handlerCalculateLayout() {
       this.$refs.x6.make()
+    },
+
+    handleImport(type) {
+      if (type === 'normal') {
+        this.layout.type = mock.normal.type
+        this.layout.cols = mock.normal.cols
+        this.layout.rows = mock.normal.rows
+        this.layout.items = mock.normal.items
+
+        this.$nextTick(_ => {
+          this.$refs.x6.make(true)
+        })
+      }
+
+      if (type === 'custom') {
+        this.layout.type = mock.custom.type
+        this.layout.items = mock.custom.items
+        this.layout.url = require('@/assets/bg.jpg')
+        this.layout.width = mock.normal.background.width
+        this.layout.height = mock.custom.background.height
+
+        this.$nextTick(_ => {
+          this.$refs.x6.make(true)
+        })
+      }
     },
   },
 }

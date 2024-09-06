@@ -4,7 +4,7 @@
       <div class="dnd-item" @mousedown="evt => handlerStartDragItem(evt)"></div>
     </div>
 
-    <div class="x-container">
+    <div class="x-container" ref="container" :style="style">
       <div class="x-canvas" ref="graph"></div>
     </div>
 
@@ -36,7 +36,7 @@ import {merge} from 'lodash'
  * @param key
  * @returns {string}
  */
-const getColKey = (key) => {
+const getRowKey = (key) => {
   const base = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
   let result = ''
 
@@ -71,8 +71,8 @@ const status = {
  * 节点默认数据
  * @type {{id: null, state: string, type: string, tags: number[]}}
  */
-const nodeItem = (type = 'seat') => ({
-  id: null, state: 'normal', type: type, tags: [], graph: null,
+const nodeItem = (type = 'seat', title = null) => ({
+  id: null, state: 'normal', type: type, tags: [], graph: {}, title: title,
 })
 
 /**
@@ -136,7 +136,7 @@ export default {
     cols: {required: true, type: Number, default: 0},
     items: {required: true, type: Array},
     config: {type: Object, default: () => ({})},
-    background: {type: Object, default: () => null},
+    background: {type: Object, default: () => ({url: null, width: null, height: null})},
     tags: {type: Array},
   },
 
@@ -148,6 +148,7 @@ export default {
       dnd: null,
       contextMenu: {x: 0, y: 0, show: false, node: null},
       gradientId: 0,
+      style: {},
     }
   },
 
@@ -175,37 +176,79 @@ export default {
     },
   },
 
-  mounted() {
-    this.makeGraphInstance()
-    this.listenEvent()
-  },
-
   methods: {
     export() {
-      this.graph.getNodes().forEach(n => {
-        console.log({
-          i: n.id,
-          p: n.prop().attrs?.text?.text,
-          'd': n.getData(),
-        })
-      })
+      return {
+        type: this.graphType,
+        total: this.nodeTotal,
+        rows: this.$props.rows,
+        cols: this.$props.cols,
+        items: this.graph.getNodes().map(node => {
+          const data = node.getData()
+          const position = node.position()
+          const size = node.size()
+
+          data.graph = {
+            ...position, ...size,
+          }
+
+          return data
+        }),
+        background: this.$props.background,
+      }
     },
 
-    make() {
+    make(restore = false) {
       this.graphType = this.$props.type
-      this.cleanGraph()
 
-      this.graphType === 'custom' && this.makeCustomGraph()
-      this.graphType === 'normal' && this.makeNormalGraph()
+      if (this.graph == null) {
+        this.init()
+      }
+
+      if (restore) {
+        this.restoreSavedItems()
+      } else {
+        this.cleanGraph()
+
+        this.graphType === 'custom' && this.makeCustomGraph()
+        this.graphType === 'normal' && this.makeNormalGraph()
+      }
 
       this.resetZoom()
     },
 
+    init() {
+      this.makeGraphInstance()
+      this.listenEvent()
+    },
+
+    restoreSavedItems() {
+      if (this.graphType === 'custom') {
+        this.makeCustomGraph()
+      }
+
+      this.$props.items.forEach(data => {
+        const attrs = this.getNodeAttrsFromNodeDate(data, data.graph)
+        this.graph.addNode(attrs)
+      })
+    },
+
     makeCustomGraph() {
-      console.log(this.background)
+      if (this.background.url) {
+        this.graph.hideGrid()
+
+        this.graph.drawBackground({
+          image: this.background.url,
+          position: 'center',
+          size: '100% 100%',
+        })
+      }
     },
 
     makeNormalGraph() {
+      this.graph.showGrid()
+      this.graph.clearBackground()
+
       const total = this.nodeTotal = this.$props.rows * this.$props.cols
       // 距离最外面的边距
       const padding = 150
@@ -217,24 +260,27 @@ export default {
       let rowStep = 0
       let colStep = 0
 
+      let rowTitle, colTitle
       for (let i = 0; i < total; i++) {
         // 行标签
         if (colStep === 0) {
+          rowTitle = getRowKey(rowStep)
           this.graph.addNode({
             shape: 'rect',
             x: 75,
             y: 150 + rowStep * size + rowStep * gap,
             width: size,
             height: size,
-            label: getColKey(rowStep),
+            label: rowTitle,
             attrs: {
               rect: {fill: 'transparent', stroke: null},
               text: {fontSize: '30px', fill: '#676767'},
             },
-            data: nodeItem('row_title'),
+            data: nodeItem('row_title', rowTitle),
           })
         }
 
+        colTitle = `${ colStep + 1 }`
         if (rowStep === 0) {
           // 列标签
           this.graph.addNode({
@@ -243,16 +289,16 @@ export default {
             y: 75,
             width: size,
             height: size,
-            label: `${ colStep + 1 }`,
+            label: colStep + 1,
             attrs: {
               rect: {fill: 'transparent', stroke: null},
               text: {fontSize: '30px', fill: '#676767'},
             },
-            data: nodeItem('col_title'),
+            data: nodeItem('col_title', colTitle),
           })
         }
 
-        const attrs = this.getNodeAttrsFromNodeDate(nodeItem())
+        const attrs = this.getNodeAttrsFromNodeDate(nodeItem('seat', `${ colTitle }${ rowTitle }`))
         attrs.x = padding + colStep * size + colStep * gap
         attrs.y = padding + rowStep * size + rowStep * gap
 
@@ -312,7 +358,6 @@ export default {
         this.updateNodeAttrs(node, data)
       })
 
-
       this.graph.resetSelection()
       this.contextMenu.show = false
       this.contextMenu.node = null
@@ -346,7 +391,12 @@ export default {
         height: height,
       }
 
-      props.attrs.label.text = ''
+      if (Number.isFinite(size.x) && Number.isFinite(size.y)) {
+        props.x = size.x
+        props.y = size.y
+      }
+
+      props.attrs.label.text = data.title || ''
 
       if (['blocked', 'not_show'].includes(data.state)) {
         props.attrs = strokeStyle.dotted(size)
@@ -451,16 +501,16 @@ export default {
     },
 
     resetZoom() {
-      this.graph.zoomToFit({maxScale: 0.8})
+      // this.graph.zoomToFit({maxScale: 0.8})
       this.graph.centerContent()
     },
 
     getGraphConfig() {
       const defaultConfig = {
         background: {color: '#F2F7FA'},
-        autoResize: true,
+        // autoResize: true,
         width: 800,
-        height: 800,
+        height: 600,
         grid: {
           visible: true,
           type: 'doubleMesh',
@@ -474,7 +524,7 @@ export default {
           modifiers: ['space'],
         },
         mousewheel: { // 缩放
-          enabled: true,
+          enabled: this.graphType !== 'custom',
           modifiers: ['alt'],
         },
         interacting: { // 节点拖动
