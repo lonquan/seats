@@ -189,7 +189,9 @@ export default {
           const size = node.size()
 
           data.graph = {
-            ...position, ...size,
+            x: position.x + size.width,
+            y: position.y + size.height,
+            ...size,
           }
 
           return data
@@ -240,8 +242,13 @@ export default {
         this.graph.drawBackground({
           image: this.background.url,
           position: 'center',
-          size: '100% 100%',
+          size: 'contain',
         })
+
+        // // 定位节点
+        // this.graph.addNode({
+        //   x: 0, y: 0, width: 1, height: 1, shape: 'rect', data: {type: 'postion'},
+        // })
       }
     },
 
@@ -381,6 +388,7 @@ export default {
       const height = size.height || defaultSize.height
 
       const props = {
+        shape: 'rect',
         data: data,
         attrs: strokeStyle.normal(size),
         markup: [
@@ -470,6 +478,7 @@ export default {
     listenEvent() {
       // 右击元素
       this.graph.on('node:contextmenu', ({e, x, y, node, view}) => {
+        console.log(node.prop())
         if (node.getData()?.type !== 'seat') {
           return
         }

@@ -246,8 +246,7 @@ const normal = {
   'background': {'url': null, 'width': null, 'height': null},
 }
 
-const custom = {"type":"custom","total":0,"rows":4,"cols":6,"items":[{"id":null,"state":"normal","type":"seat","tags":[2,3],"graph":{"x":230,"y":160,"width":50,"height":50},"title":null},{"id":null,"state":"normal","type":"seat","tags":[1],"graph":{"x":50,"y":70,"width":50,"height":50},"title":null},{"id":null,"state":"normal","type":"seat","tags":[],"graph":{"x":550,"y":100,"width":50,"height":50},"title":null},{"id":null,"state":"normal","type":"seat","tags":[1],"graph":{"x":-30,"y":220,"width":50,"height":50},"title":null},{"id":null,"state":"normal","type":"seat","tags":[2,3],"graph":{"x":246,"y":40,"width":50,"height":50},"title":null},{"id":null,"state":"normal","type":"seat","tags":[],"graph":{"x":460,"y":70,"width":50,"height":50},"title":null},{"id":null,"state":"normal","type":"seat","tags":[2,3],"graph":{"x":170,"y":50,"width":50,"height":50},"title":null},{"id":null,"state":"normal","type":"seat","tags":[1],"graph":{"x":-70,"y":60,"width":50,"height":50},"title":null}],"background":{"url":"/img/bg.255c73eb.jpg","width":null,"height":1276}}
-
+const custom =  {"type":"custom","total":0,"rows":4,"cols":6,"items":[{"type":"postion","graph":{"x":3,"y":3,"width":1,"height":1}},{"id":null,"state":"normal","type":"seat","tags":[1,2,3],"graph":{"x":490,"y":220,"width":50,"height":50},"title":null},{"id":null,"state":"not_show","type":"seat","tags":[],"graph":{"x":800,"y":170,"width":50,"height":50},"title":null},{"id":null,"state":"normal","type":"seat","tags":[1,2,3],"graph":{"x":530,"y":110,"width":50,"height":50},"title":null},{"id":null,"state":"normal","type":"seat","tags":[],"graph":{"x":250,"y":290,"width":50,"height":50},"title":null}],"background":{"url":"/img/bg.255c73eb.jpg","width":null,"height":1276}}
 export default {
   normal, custom,
 }

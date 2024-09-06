@@ -61,8 +61,8 @@
             </el-form-item>
 
             <el-form-item label="">
-              <el-button @click="handleImport('normal')">加载普通</el-button>
-              <el-button @click="handleImport('custom')">加载自定义</el-button>
+              <el-button @click="handlerImport('normal')">加载普通</el-button>
+              <el-button @click="handlerImport('custom')">加载自定义</el-button>
             </el-form-item>
 
           </el-form>
@@ -139,6 +139,7 @@ export default {
         img.src = objectUrl
       })
     },
+
     handlerImageChange(file) {
       this.getImageSize(file).then(size => {
         this.layout.width = size.width
@@ -158,7 +159,7 @@ export default {
       this.$refs.x6.make()
     },
 
-    handleImport(type) {
+    handlerImport(type) {
       if (type === 'normal') {
         this.layout.type = mock.normal.type
         this.layout.cols = mock.normal.cols
