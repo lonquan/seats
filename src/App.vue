@@ -151,8 +151,9 @@ export default {
     },
 
     handlerSave() {
-      console.log(this.$refs.x6.export())
-      console.log(JSON.stringify(this.$refs.x6.export()))
+      const data = this.$refs.x6.export()
+      console.log(data)
+      console.log(JSON.stringify(data))
     },
 
     handlerCalculateLayout() {
@@ -174,7 +175,7 @@ export default {
       if (type === 'custom') {
         this.layout.type = mock.custom.type
         this.layout.items = mock.custom.items
-        this.layout.url = require('@/assets/bg.jpg')
+        this.layout.url = '/bg.jpg'
         this.layout.width = mock.normal.background.width
         this.layout.height = mock.custom.background.height
 

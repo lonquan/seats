@@ -63,7 +63,7 @@ const status = {
  seat: '座位', passage: '通道',
  square_table: '正方桌', circle_table: '圆形桌',
  rectangle_table: '长方桌', hexagon_table: '六边桌',
- octagon_table: '八边桌',
+ octagon_table: '八边桌', background: '背景'
  }
  */
 
@@ -179,9 +179,6 @@ export default {
 
   methods: {
     export() {
-      console.log(
-          JSON.stringify(this.graph.toJSON())
-      )
       return {
         type: this.graphType,
         total: this.nodeTotal,
@@ -193,8 +190,7 @@ export default {
           const size = node.size()
 
           data.graph = {
-            x: position.x + size.width,
-            y: position.y + size.height,
+            ...position,
             ...size,
           }
 
@@ -408,8 +404,8 @@ export default {
       }
 
       if (Number.isFinite(size.x) && Number.isFinite(size.y)) {
-        props.x = size.x - size.width
-        props.y = size.y - size.height
+        props.x = size.x
+        props.y = size.y
       }
 
       props.attrs.label.text = data.title || ''
@@ -486,7 +482,7 @@ export default {
     listenEvent() {
       // 右击元素
       this.graph.on('node:contextmenu', ({e, x, y, node, view}) => {
-        console.log(node.prop())
+        // console.log(node.prop())
         if (node.getData()?.type !== 'seat') {
           return
         }
