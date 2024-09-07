@@ -109,7 +109,7 @@ export default {
     return {
       layout: {
         type: 'custom', rows: 4, cols: 6, items: [],
-        url: null, width: null, height: null,
+        url: '/bg.jpg', width: null, height: null,
       },
       config: {
         /* x6 config */

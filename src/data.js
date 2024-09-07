@@ -246,7 +246,101 @@ const normal = {
   'background': {'url': null, 'width': null, 'height': null},
 }
 
-const custom =  {"type":"custom","total":0,"rows":4,"cols":6,"items":[{"type":"postion","graph":{"x":3,"y":3,"width":1,"height":1}},{"id":null,"state":"normal","type":"seat","tags":[1,2,3],"graph":{"x":490,"y":220,"width":50,"height":50},"title":null},{"id":null,"state":"not_show","type":"seat","tags":[],"graph":{"x":800,"y":170,"width":50,"height":50},"title":null},{"id":null,"state":"normal","type":"seat","tags":[1,2,3],"graph":{"x":530,"y":110,"width":50,"height":50},"title":null},{"id":null,"state":"normal","type":"seat","tags":[],"graph":{"x":250,"y":290,"width":50,"height":50},"title":null}],"background":{"url":"/img/bg.255c73eb.jpg","width":null,"height":1276}}
+const custom =
+    {
+      'type': 'custom',
+      'total': 0,
+      'rows': 4,
+      'cols': 6,
+      'items': [{'type': 'background', 'graph': {'x': 800, 'y': 600, 'width': 800, 'height': 600}}, {
+        'id': null,
+        'state': 'normal',
+        'type': 'seat',
+        'tags': [],
+        'graph': {'x': 460, 'y': 370, 'width': 50, 'height': 50},
+        'title': null,
+      }, {
+        'id': null,
+        'state': 'normal',
+        'type': 'seat',
+        'tags': [],
+        'graph': {'x': 220, 'y': 440, 'width': 50, 'height': 50},
+        'title': null,
+      }, {
+        'id': null,
+        'state': 'normal',
+        'type': 'seat',
+        'tags': [],
+        'graph': {'x': 790, 'y': 321, 'width': 50, 'height': 50},
+        'title': null,
+      }, {
+        'id': null,
+        'state': 'normal',
+        'type': 'seat',
+        'tags': [],
+        'graph': {'x': 400, 'y': 290, 'width': 50, 'height': 50},
+        'title': null,
+      }, {
+        'id': null,
+        'state': 'normal',
+        'type': 'seat',
+        'tags': [],
+        'graph': {'x': 290, 'y': 290, 'width': 50, 'height': 50},
+        'title': null,
+      }, {
+        'id': null,
+        'state': 'normal',
+        'type': 'seat',
+        'tags': [],
+        'graph': {'x': 580, 'y': 340, 'width': 50, 'height': 50},
+        'title': null,
+      }, {
+        'id': null,
+        'state': 'normal',
+        'type': 'seat',
+        'tags': [],
+        'graph': {'x': 691, 'y': 291, 'width': 50, 'height': 50},
+        'title': null,
+      }, {
+        'id': null,
+        'state': 'normal',
+        'type': 'seat',
+        'tags': [],
+        'graph': {'x': 183, 'y': 290, 'width': 50, 'height': 50},
+        'title': null,
+      }, {
+        'id': null,
+        'state': 'normal',
+        'type': 'seat',
+        'tags': [],
+        'graph': {'x': 380, 'y': 230, 'width': 50, 'height': 50},
+        'title': null,
+      }, {
+        'id': null,
+        'state': 'normal',
+        'type': 'seat',
+        'tags': [],
+        'graph': {'x': 476, 'y': 271, 'width': 50, 'height': 50},
+        'title': null,
+      }, {
+        'id': null,
+        'state': 'normal',
+        'type': 'seat',
+        'tags': [],
+        'graph': {'x': 593, 'y': 271, 'width': 50, 'height': 50},
+        'title': null,
+      }, {
+        'id': null,
+        'state': 'normal',
+        'type': 'seat',
+        'tags': [],
+        'graph': {'x': 659, 'y': 230, 'width': 50, 'height': 50},
+        'title': null,
+      }],
+      'background': {'url': '/bg.jpg', 'width': null, 'height': null},
+    }
+
+
 export default {
   normal, custom,
 }

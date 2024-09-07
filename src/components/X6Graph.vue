@@ -149,6 +149,7 @@ export default {
       contextMenu: {x: 0, y: 0, show: false, node: null},
       gradientId: 0,
       style: {},
+      bgNode: null,
     }
   },
 
@@ -178,6 +179,9 @@ export default {
 
   methods: {
     export() {
+      console.log(
+          JSON.stringify(this.graph.toJSON())
+      )
       return {
         type: this.graphType,
         total: this.nodeTotal,
@@ -230,6 +234,9 @@ export default {
       }
 
       this.$props.items.forEach(data => {
+        if (data.type === 'background') {
+          return
+        }
         const attrs = this.getNodeAttrsFromNodeDate(data, data.graph)
         this.graph.addNode(attrs)
       })
@@ -239,16 +246,17 @@ export default {
       if (this.background.url) {
         this.graph.hideGrid()
 
-        this.graph.drawBackground({
-          image: this.background.url,
-          position: 'center',
-          size: 'contain',
+        this.bgNode = this.graph.addNode({
+          shape: 'image',
+          x: 0,
+          y: 0,
+          width: 800,
+          height: 600,
+          imageUrl: this.background.url,
+          data: {
+            type: 'background',
+          },
         })
-
-        // // 定位节点
-        // this.graph.addNode({
-        //   x: 0, y: 0, width: 1, height: 1, shape: 'rect', data: {type: 'postion'},
-        // })
       }
     },
 
@@ -400,8 +408,8 @@ export default {
       }
 
       if (Number.isFinite(size.x) && Number.isFinite(size.y)) {
-        props.x = size.x
-        props.y = size.y
+        props.x = size.x - size.width
+        props.y = size.y - size.height
       }
 
       props.attrs.label.text = data.title || ''
@@ -467,7 +475,7 @@ export default {
     },
 
     hasCovered(node) {
-      if (this.graph.getNodesUnderNode(node).length) {
+      if (this.graph.getNodesUnderNode(node).filter(n => n.getData().type !== 'background').length) {
         this.graph.undoAndCancel()
         return true
       }
@@ -491,7 +499,7 @@ export default {
 
       // 节点添加
       this.graph.on('node:added', ({node}) => {
-        if (this.graph.getNodesUnderNode(node).length) {
+        if (this.graph.getNodesUnderNode(node).filter(n => n.getData().type !== 'background').length) {
           return this.graph.removeNode(node)
         }
       })
@@ -533,7 +541,7 @@ export default {
           modifiers: ['space'],
         },
         mousewheel: { // 缩放
-          enabled: this.graphType !== 'custom',
+          enabled: () => this.graphType !== 'custom',
           modifiers: ['alt'],
         },
         interacting: { // 节点拖动
