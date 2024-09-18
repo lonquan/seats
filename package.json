@@ -12,15 +12,20 @@
     "@antv/x6-plugin-dnd": "^2.1.1",
     "@antv/x6-plugin-export": "^2.1.6",
     "@antv/x6-plugin-history": "^2.2.4",
+    "@antv/x6-plugin-scroller": "^2.0.10",
     "@antv/x6-plugin-selection": "^2.2.2",
     "@antv/x6-plugin-snapline": "^2.1.7",
     "@antv/x6-plugin-transform": "^2.1.8",
     "core-js": "^3.8.3",
+    "dayjs": "^1.11.13",
     "element-ui": "^2.15.14",
+    "hammerjs": "^2.0.8",
     "lodash": "^4.17.21",
     "sass": "^1.77.8",
     "sass-loader": "^16.0.1",
-    "vue": "^2.6.14"
+    "vant": "^2.13.2",
+    "vue": "^2.6.14",
+    "vue-router": "^3.6.5"
   },
   "devDependencies": {
     "@babel/core": "^7.12.16",
